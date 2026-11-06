@@ -41,6 +41,11 @@ _MODEL_CLASS_IMPORTS: dict[str, tuple[str, str, str | None]] = {
     "ChatGroq": ("langchain_groq", "ChatGroq", "langchain-groq"),
     "ChatOllama": ("langchain_ollama", "ChatOllama", None),
     "ChatWatsonx": ("langchain_ibm", "ChatWatsonx", None),
+    "ChatBedrockConverse": (
+        "langchain_aws.chat_models.bedrock_converse",
+        "ChatBedrockConverse",
+        "langchain-aws",
+    ),
 }
 
 _EMBEDDING_CLASS_IMPORTS: dict[str, tuple[str, str, str | None]] = {
@@ -52,6 +57,7 @@ _EMBEDDING_CLASS_IMPORTS: dict[str, tuple[str, str, str | None]] = {
     ),
     "OllamaEmbeddings": ("langchain_ollama", "OllamaEmbeddings", None),
     "WatsonxEmbeddings": ("langchain_ibm", "WatsonxEmbeddings", None),
+    "BedrockEmbeddings": ("langchain_aws", "BedrockEmbeddings", "langchain-aws"),
 }
 
 # Canonical mapping of provider name → embedding class name.
@@ -65,6 +71,8 @@ EMBEDDING_PROVIDER_CLASS_MAPPING: dict[str, str] = {
     "IBM watsonx.ai": "WatsonxEmbeddings",  # Alias used by MODEL_PROVIDERS_DICT
     # Foundry: OpenAI-compatible embeddings; deployment name is ``model``.
     "Azure AI Foundry": "OpenAIEmbeddings",
+    "Amazon Bedrock": "BedrockEmbeddings",
+    "AWS Bedrock": "BedrockEmbeddings",
 }
 
 # Provider → param-name mapping for embedding-model instantiation.
@@ -116,6 +124,10 @@ EMBEDDING_PARAM_MAPPINGS: dict[str, dict[str, str]] = {
         "chunk_size": "chunk_size",
         "request_timeout": "timeout",
         "max_retries": "max_retries",
+    },
+    "Amazon Bedrock": {
+        "model_id": "model_id",
+        "api_key": "aws_access_key_id",
     },
 }
 

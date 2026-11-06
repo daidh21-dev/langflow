@@ -773,6 +773,11 @@ def register_builtin_adapters() -> None:
     except ModuleNotFoundError as exc:
         logger.info("Skipping Watsonx Orchestrate adapter registration: %s", exc)
 
+    try:
+        import_module("langflow.services.adapters.deployment.agentcore_runtime.register")
+    except ModuleNotFoundError as exc:
+        logger.info("Skipping AgentCore Runtime adapter registration: %s", exc)
+
 
 def register_builtin_deployment_mappers() -> None:
     """Import built-in deployment mapper modules so registration side effects fire."""
@@ -784,6 +789,11 @@ def register_builtin_deployment_mappers() -> None:
         import_module("langflow.api.v1.mappers.deployments.watsonx_orchestrate")
     except ModuleNotFoundError as exc:
         logger.info("Skipping Watsonx Orchestrate deployment mapper registration: %s", exc)
+
+    try:
+        import_module("langflow.api.v1.mappers.deployments.agentcore_runtime")
+    except ModuleNotFoundError as exc:
+        logger.info("Skipping AgentCore Runtime deployment mapper registration: %s", exc)
 
 
 async def hydrate_catalog_policy() -> None:

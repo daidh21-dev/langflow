@@ -6,12 +6,23 @@ import { useGetProviderAccounts } from "@/controllers/API/queries/deployment-pro
 import { decorateWxoUrl } from "@/utils/decorate-wxo-url";
 import { cn } from "@/utils/utils";
 import { useDeploymentStepper } from "../contexts/deployment-stepper-context";
-import type { DeploymentProvider, ProviderAccount } from "../types";
+import {
+  AGENTCORE_PROVIDER_KEY,
+  type DeploymentProvider,
+  type ProviderAccount,
+  WXO_PROVIDER_KEY,
+} from "../types";
 import { handleTabListKeyDown } from "../utils/tab-keyboard-navigation";
 import ProviderCredentialsForm from "./provider-credentials-form";
 import { RadioSelectItem } from "./radio-select-item";
 
 const PROVIDERS: DeploymentProvider[] = [
+  {
+    id: "agentcore",
+    type: "agentcore",
+    name: "AgentCore Runtime",
+    icon: "Cpu",
+  },
   {
     id: "watsonx",
     type: "watsonx",
@@ -128,6 +139,7 @@ function EnvironmentList({
 export default function StepProvider() {
   const { t } = useTranslation();
   const {
+    selectedProvider,
     setSelectedProvider,
     selectedInstance,
     setSelectedInstance,
@@ -135,13 +147,20 @@ export default function StepProvider() {
     setCredentials,
   } = useDeploymentStepper();
   const { data: providerAccountsData } = useGetProviderAccounts({});
-  const environments = providerAccountsData?.provider_accounts ?? [];
+  const allEnvironments = providerAccountsData?.provider_accounts ?? [];
 
   useEffect(() => {
-    setSelectedProvider(PROVIDERS[0]);
-  }, [setSelectedProvider]);
+    if (!selectedProvider) {
+      setSelectedProvider(PROVIDERS[0]);
+    }
+  }, [selectedProvider, setSelectedProvider]);
 
-  const provider = PROVIDERS[0];
+  const provider = selectedProvider ?? PROVIDERS[0];
+  const expectedProviderKey =
+    provider.type === "watsonx" ? WXO_PROVIDER_KEY : AGENTCORE_PROVIDER_KEY;
+  const environments = allEnvironments.filter(
+    (env) => env.provider_key === expectedProviderKey,
+  );
   const hasEnvironments = environments.length > 0;
 
   const [environmentTab, setEnvironmentTab] = useState<EnvironmentTab>("new");
@@ -149,51 +168,91 @@ export default function StepProvider() {
   useEffect(() => {
     if (environments.length > 0) {
       setEnvironmentTab("existing");
+      if (
+        !selectedInstance ||
+        selectedInstance.provider_key !== expectedProviderKey
+      ) {
+        setSelectedInstance(environments[0]);
+      }
+    } else {
+      setEnvironmentTab("new");
     }
-  }, [environments.length]);
+  }, [environments, expectedProviderKey, selectedInstance, setSelectedInstance]);
 
   return (
     <div className="flex h-full w-full flex-col gap-6 overflow-y-auto py-3">
       <h2 className="text-lg font-semibold">{t("deployments.provider")}</h2>
 
       <div className="flex flex-col gap-3">
-        <div className="flex items-center gap-3 rounded-lg border border-border bg-muted p-3">
-          <ForwardedIconComponent
-            name={provider.icon}
-            className="h-8 w-8 text-foreground"
-          />
-          <span className="text-sm font-medium">{provider.name}</span>
-          <Badge variant="purpleStatic" size="xq" className="shrink-0">
-            Beta
-          </Badge>
+        <div className="grid grid-cols-2 gap-3">
+          {PROVIDERS.map((item) => {
+            const isActive = provider.id === item.id;
+            return (
+              <button
+                key={item.id}
+                type="button"
+                onClick={() => setSelectedProvider(item)}
+                data-testid={`provider-option-${item.id}`}
+                className={cn(
+                  "flex items-center gap-3 rounded-lg border p-3 text-left transition-colors",
+                  isActive
+                    ? "border-primary bg-primary/5"
+                    : "border-border bg-muted hover:border-foreground/30",
+                )}
+              >
+                <ForwardedIconComponent
+                  name={item.icon}
+                  className="h-8 w-8 shrink-0 text-foreground"
+                />
+                <span className="text-sm font-medium">{item.name}</span>
+                <Badge
+                  variant={item.type === "agentcore" ? "emerald" : "purpleStatic"}
+                  size="xq"
+                  className="ml-auto shrink-0"
+                >
+                  {item.type === "agentcore" ? "Ready" : "Beta"}
+                </Badge>
+              </button>
+            );
+          })}
         </div>
-        <p className="text-sm text-muted-foreground">
-          {t("deployments.wxoConfigureCredentials")}{" "}
-          <a
-            href={decorateWxoUrl(
-              "https://www.ibm.com/products/watsonx-orchestrate#pricing",
-              "signup-pricing",
-            )}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="font-medium text-primary hover:underline"
-          >
-            {t("deployments.wxoSignUp")}
-          </a>
-          . {t("deployments.wxoAlreadyHaveAccount")}{" "}
-          <a
-            href={decorateWxoUrl(
-              "https://www.ibm.com/docs/en/watsonx/watson-orchestrate/base?topic=api-getting-started",
-              "docs-credentials",
-            )}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="font-medium text-primary hover:underline"
-          >
-            {t("deployments.wxoFindCredentials")}
-          </a>
-          .
-        </p>
+        {provider.type === "agentcore" ? (
+          <p className="text-sm text-muted-foreground">
+            Triển khai và thực thi trực tiếp Flow của bạn trên{" "}
+            <span className="font-medium text-foreground">
+              AgentCore Runtime
+            </span>{" "}
+            (hỗ trợ quản lý phiên bản, kết nối biến môi trường và chạy thử nghiệm trực tiếp trên giao diện).
+          </p>
+        ) : (
+          <p className="text-sm text-muted-foreground">
+            {t("deployments.wxoConfigureCredentials")}{" "}
+            <a
+              href={decorateWxoUrl(
+                "https://www.ibm.com/products/watsonx-orchestrate#pricing",
+                "signup-pricing",
+              )}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-medium text-primary hover:underline"
+            >
+              {t("deployments.wxoSignUp")}
+            </a>
+            . {t("deployments.wxoAlreadyHaveAccount")}{" "}
+            <a
+              href={decorateWxoUrl(
+                "https://www.ibm.com/docs/en/watsonx/watson-orchestrate/base?topic=api-getting-started",
+                "docs-credentials",
+              )}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-medium text-primary hover:underline"
+            >
+              {t("deployments.wxoFindCredentials")}
+            </a>
+            .
+          </p>
+        )}
       </div>
 
       {hasEnvironments ? (

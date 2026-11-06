@@ -97,6 +97,12 @@ def validate_provider_url_optional(v: str | None, info: object) -> str | None:
 _PROVIDER_HOSTNAME_ALLOWLIST: dict[DeploymentProviderKey, tuple[str, ...]] = {
     # https://www.ibm.com/docs/en/watsonx/watson-orchestrate/base?topic=api-getting-endpoint
     DeploymentProviderKey.WATSONX_ORCHESTRATE: (".ibm.com",),  # note: on-prem is not supported
+    DeploymentProviderKey.AGENTCORE_RUNTIME: (
+        ".amazonaws.com",
+        ".daido.dev",
+        "localhost",
+        "127.0.0.1",
+    ),
 }
 
 
@@ -150,8 +156,22 @@ def _extract_wxo_tenant_from_url(url: str) -> str | None:
     return path_segments[tenant_index].strip() or None
 
 
+def _extract_agentcore_tenant_from_url(url: str) -> str | None:
+    """Extract or derive a tenant/instance id from an AgentCore Runtime URL."""
+    parsed = urlparse(url)
+    path_segments = [segment.strip() for segment in parsed.path.split("/") if segment.strip()]
+    if "instances" in path_segments:
+        idx = path_segments.index("instances") + 1
+        if idx < len(path_segments):
+            return path_segments[idx]
+    if path_segments:
+        return path_segments[-1]
+    return parsed.hostname or "agentcore-runtime"
+
+
 _PROVIDER_TENANT_EXTRACTORS: dict[DeploymentProviderKey, Callable[[str], str | None]] = {
     DeploymentProviderKey.WATSONX_ORCHESTRATE: _extract_wxo_tenant_from_url,
+    DeploymentProviderKey.AGENTCORE_RUNTIME: _extract_agentcore_tenant_from_url,
 }
 
 

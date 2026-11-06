@@ -1,0 +1,16 @@
+{
+  "agent_id": "ac_agent_39bbb180ba1d",
+  "name": "langflow_Demo_Cch_1_AgentCore_JSON_Flow_Port_8081_b5487b44",
+  "display_name": "Demo Cách 1: AgentCore JSON Flow (AWS ap-southeast-1)",
+  "description": "Triển khai từ Flow kéo-thả [Demo Cách 1] lên AWS Bedrock AgentCore Runtime (langflow_method1_json_flow-gJmY6j8KWf, ap-southeast-1).",
+  "llm": "us.anthropic.claude-3-7-sonnet-20250219-v1:0",
+  "updated_at": "2026-11-06T07:14:03.141044+00:00",
+  "tools": [
+    {
+      "tool_id": "ac_tool_8a01df91df47",
+      "name": "langflow_AgentCore_JSON_Flow_Tool_0f826912",
+      "display_name": "HR Agent - JSON Flow (Kéo thả UI)",
+      "source_ref": "2bdb6cf2-d760-4edf-b7f8-0cefa1ca3baf"
+    }
+  ]
+}

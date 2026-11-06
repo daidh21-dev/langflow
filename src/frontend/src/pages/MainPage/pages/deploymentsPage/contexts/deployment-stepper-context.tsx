@@ -27,7 +27,12 @@ import type {
   ProviderCredentials,
   SelectedFlowVersion,
 } from "../types";
-import { getDeploymentDisplayName, getSelectedFlowVersionKey } from "../types";
+import {
+  AGENTCORE_PROVIDER_KEY,
+  getDeploymentDisplayName,
+  getSelectedFlowVersionKey,
+  WXO_PROVIDER_KEY,
+} from "../types";
 
 interface DeploymentStepperInitialState {
   projectId?: string;
@@ -139,7 +144,7 @@ export function DeploymentStepperProvider({
     useState<ProviderAccount | null>(initialState?.initialInstance ?? null);
   const [credentials, setCredentials] = useState<ProviderCredentials>({
     name: "",
-    provider_key: "",
+    provider_key: AGENTCORE_PROVIDER_KEY,
     url: "",
     api_key: "",
   });
@@ -298,7 +303,8 @@ export function DeploymentStepperProvider({
     setSelectedInstance(null);
     setCredentials({
       name: "",
-      provider_key: "",
+      provider_key:
+        provider.type === "watsonx" ? WXO_PROVIDER_KEY : AGENTCORE_PROVIDER_KEY,
       url: "",
       api_key: "",
     });

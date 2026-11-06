@@ -477,6 +477,23 @@ def get_llm(
         connection_url_param = "endpoint"
         # Bound hung/blackholed endpoints the same way live discovery does.
         kwargs["request_timeout"] = AZURE_AI_FOUNDRY_REQUEST_TIMEOUT
+    elif provider in {"Amazon Bedrock", "AWS Bedrock"}:
+        kwargs.pop("streaming", None)
+        if not stream:
+            kwargs["disable_streaming"] = True
+        provider_vars = unified_models_module.get_all_variables_for_provider(user_id, "Amazon Bedrock")
+        secret_key = provider_vars.get("AWS_SECRET_ACCESS_KEY") or _env_if_allowed("AWS_SECRET_ACCESS_KEY")
+        session_token = provider_vars.get("AWS_SESSION_TOKEN") or _env_if_allowed("AWS_SESSION_TOKEN")
+        region_val = (
+            provider_vars.get("AWS_DEFAULT_REGION")
+            or _env_if_allowed("AWS_DEFAULT_REGION")
+            or "ap-southeast-1"
+        )
+        if secret_key:
+            kwargs["aws_secret_access_key"] = secret_key
+        if session_token:
+            kwargs["aws_session_token"] = session_token
+        kwargs["region_name"] = region_val
     elif is_registered(provider):
         # Bundle-contributed provider: apply its declared connection variables
         # (base_url, attribution headers, etc.) generically from its metadata.

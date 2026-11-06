@@ -467,20 +467,21 @@ def add_base64_padding(value: str) -> str:
 def ensure_fernet_key(secret_key: str) -> bytes:
     """Derive a valid Fernet key from a secret key string.
 
-    For short keys (< 32 chars), the 32-byte key is derived with SHA-256, a
-    cryptographic hash. For longer keys, base64 padding is added.
-
-    Security note: short keys previously seeded Python's ``random`` module to
-    generate key bytes. New encryption uses SHA-256 so it never depends on a
-    non-cryptographic PRNG or mutates global PRNG state. Short, guessable input
-    remains unsuitable for production; settings validation warns operators.
+    For short keys (< 32 chars) or keys that are not 32 urlsafe-base64 decoded bytes,
+    the 32-byte key is derived with SHA-256, a cryptographic hash.
     """
     if len(secret_key) < MINIMUM_SECRET_KEY_LENGTH:
         digest = hashlib.sha256(secret_key.encode()).digest()  # 32 bytes
-        key = base64.urlsafe_b64encode(digest)
-    else:
-        key = add_base64_padding(secret_key).encode()
-    return key
+        return base64.urlsafe_b64encode(digest)
+    padded = add_base64_padding(secret_key)
+    try:
+        raw = base64.urlsafe_b64decode(padded.encode())
+        if len(raw) == 32:
+            return padded.encode()
+    except Exception:  # noqa: BLE001, S110
+        pass
+    digest = hashlib.sha256(secret_key.encode()).digest()
+    return base64.urlsafe_b64encode(digest)
 
 
 def _ensure_legacy_fernet_key(secret_key: str) -> bytes:

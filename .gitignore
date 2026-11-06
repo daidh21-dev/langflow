@@ -315,3 +315,7 @@ _context
 requirements-mend.txt
 requirements-workspace-mend.txt
 requirements-gp-mend.txt
+
+# Local AWS runtime credentials
+deploy/agentcore/aws_deployed_runtimes.json
+deploy/agentcore/deploy_to_aws.py

@@ -1,4 +1,4 @@
-import { Fragment, useState } from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import ForwardedIconComponent from "@/components/common/genericIconComponent";
 import { Badge } from "@/components/ui/badge";
@@ -82,7 +82,17 @@ export default function DeploymentsTable({
 }: DeploymentsTableProps) {
   const { t } = useTranslation();
   const { can } = usePermissions();
-  const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
+  const [expandedIds, setExpandedIds] = useState<Set<string>>(
+    () => new Set(deployments.map((d) => d.id)),
+  );
+  const hasAutoExpanded = useRef(false);
+
+  useEffect(() => {
+    if (!hasAutoExpanded.current && deployments.length > 0) {
+      hasAutoExpanded.current = true;
+      setExpandedIds(new Set(deployments.map((d) => d.id)));
+    }
+  }, [deployments]);
 
   const toggleExpanded = (id: string) => {
     setExpandedIds((prev) => {
@@ -129,8 +139,14 @@ export default function DeploymentsTable({
                 )}
               >
                 <TableCell>
-                  <div className="flex flex-col">
-                    <span className="font-medium">{resolvedDisplayName}</span>
+                  <div className="flex flex-col gap-1">
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium">{resolvedDisplayName}</span>
+                      <Badge variant="emerald" size="xq" className="gap-1">
+                        <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                        READY (5/5 Bước)
+                      </Badge>
+                    </div>
                     {deployment.description && (
                       <span className="text-xs text-muted-foreground">
                         {deployment.description}
@@ -264,6 +280,7 @@ export default function DeploymentsTable({
               {isExpanded && (
                 <DeploymentExpandedRow
                   deploymentId={deployment.id}
+                  deployment={deployment}
                   colSpan={COLUMN_COUNT}
                 />
               )}

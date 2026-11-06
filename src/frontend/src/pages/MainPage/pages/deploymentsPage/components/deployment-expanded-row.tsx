@@ -4,14 +4,18 @@ import { Badge } from "@/components/ui/badge";
 import Loading from "@/components/ui/loading";
 import { TableCell, TableRow } from "@/components/ui/table";
 import { useGetDeploymentAttachments } from "@/controllers/API/queries/deployments/use-get-deployment-attachments";
+import type { Deployment } from "../types";
+import DeploymentStepsTracker from "./deployment-steps-tracker";
 
 interface DeploymentExpandedRowProps {
   deploymentId: string;
+  deployment?: Deployment;
   colSpan: number;
 }
 
 export default function DeploymentExpandedRow({
   deploymentId,
+  deployment,
   colSpan,
 }: DeploymentExpandedRowProps) {
   const { t } = useTranslation();
@@ -66,6 +70,9 @@ export default function DeploymentExpandedRow({
               </div>
             </div>
           )}
+          <div className="mt-3">
+            <DeploymentStepsTracker deployment={deployment} />
+          </div>
         </div>
       </TableCell>
     </TableRow>

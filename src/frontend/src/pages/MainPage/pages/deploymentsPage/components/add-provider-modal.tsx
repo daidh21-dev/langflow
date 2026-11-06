@@ -10,7 +10,11 @@ import {
 import { usePatchProviderAccount } from "@/controllers/API/queries/deployment-provider-accounts/use-patch-provider-account";
 import { usePostProviderAccount } from "@/controllers/API/queries/deployment-provider-accounts/use-post-provider-account";
 import { useErrorAlert } from "../hooks/use-error-alert";
-import type { ProviderAccount, ProviderCredentials } from "../types";
+import {
+  AGENTCORE_PROVIDER_KEY,
+  type ProviderAccount,
+  type ProviderCredentials,
+} from "../types";
 import ProviderCredentialsForm from "./provider-credentials-form";
 import ProviderModalIntro from "./provider-modal-intro";
 
@@ -22,8 +26,8 @@ interface AddProviderModalProps {
 
 const EMPTY_CREDENTIALS: ProviderCredentials = {
   name: "",
-  provider_key: "watsonx-orchestrate",
-  url: "",
+  provider_key: AGENTCORE_PROVIDER_KEY,
+  url: "https://langflow.daido.dev",
   api_key: "",
 };
 
@@ -130,7 +134,23 @@ export default function AddProviderModal({
         </DialogDescription>
 
         <div className="flex flex-col gap-4 pt-2">
-          <ProviderModalIntro provider={provider} />
+          <ProviderModalIntro
+            provider={provider}
+            selectedProviderKey={credentials.provider_key}
+            onSelectProviderKey={
+              provider
+                ? undefined
+                : (providerKey) =>
+                    setCredentials((prev) => ({
+                      ...prev,
+                      provider_key: providerKey,
+                      url:
+                        providerKey === AGENTCORE_PROVIDER_KEY && !prev.url
+                          ? "https://langflow.daido.dev"
+                          : prev.url,
+                    }))
+            }
+          />
 
           <ProviderCredentialsForm
             credentials={credentials}

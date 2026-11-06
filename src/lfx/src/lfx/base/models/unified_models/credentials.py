@@ -586,6 +586,25 @@ def validate_model_provider_key(provider: str, variables: dict[str, str], model_
             llm = ChatAnthropic(anthropic_api_key=api_key, model=validation_model, max_tokens=1)
             llm.invoke("test")
 
+        elif provider in {"Amazon Bedrock", "AWS Bedrock"}:
+            import boto3
+
+            access_key = variables.get("AWS_ACCESS_KEY_ID")
+            secret_key = variables.get("AWS_SECRET_ACCESS_KEY")
+            session_token = variables.get("AWS_SESSION_TOKEN")
+            region = variables.get("AWS_DEFAULT_REGION") or "ap-southeast-1"
+            if not access_key or not secret_key:
+                return
+            sts_kwargs = {
+                "region_name": region,
+                "aws_access_key_id": access_key,
+                "aws_secret_access_key": secret_key,
+            }
+            if session_token:
+                sts_kwargs["aws_session_token"] = session_token
+            sts = boto3.client("sts", **sts_kwargs)
+            sts.get_caller_identity()
+
         elif provider == "Google Generative AI":
             from langchain_google_genai import ChatGoogleGenerativeAI  # type: ignore  # noqa: PGH003
 

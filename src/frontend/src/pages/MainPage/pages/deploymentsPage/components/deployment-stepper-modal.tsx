@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useParams } from "react-router-dom";
 import {
@@ -12,7 +12,6 @@ import { useGetDeployment } from "@/controllers/API/queries/deployments/use-get-
 import { useGetDeploymentAttachments } from "@/controllers/API/queries/deployments/use-get-deployment-attachments";
 import { usePatchDeployment } from "@/controllers/API/queries/deployments/use-patch-deployment";
 import { usePostDeployment } from "@/controllers/API/queries/deployments/use-post-deployment";
-import useAlertStore from "@/stores/alertStore";
 import useFlowStore from "@/stores/flowStore";
 import { useFolderStore } from "@/stores/foldersStore";
 import {
@@ -30,7 +29,11 @@ import {
   type ProviderAccount,
   type SelectedFlowVersion,
 } from "../types";
-import DeploymentStepper, { CREATE_DEPLOYED_STEPS } from "./deployment-stepper";
+import DeploymentStepper, {
+  CREATE_DEPLOYED_STEPS,
+  EDIT_DEPLOYED_STEPS,
+  EDIT_STEPS,
+} from "./deployment-stepper";
 import DeploymentStepperFooter from "./deployment-stepper-footer";
 import DeploymentSuccessContent from "./deployment-success-content";
 import StepAttachFlows from "./step-attach-flows";
@@ -87,18 +90,6 @@ export default function DeploymentStepperModal({
       { enabled: open && isEditMode && !!editingDeployment?.id },
     );
 
-  // Build initial maps from attachments for the stepper context.
-  // Tool names and connection assignments come from the provider (wxO) via
-  // the /flows endpoint, NOT from the Langflow database. This means:
-  //
-  // - If a user renames a tool in the wxO console, the new name appears
-  //   here on the next edit. Langflow doesn't cache tool names locally.
-  // - If a tool is deleted in wxO, provider_data will be null and the
-  //   review page falls back to the Langflow flow name.
-  // - If a connection is deleted in wxO but the tool still references it,
-  //   the app_id will appear in connectionsByFlow. The backend will fail
-  //   fast during the update if the caller tries to attach a new tool to
-  //   that stale connection.
   const editInitialState = useMemo(() => {
     if (!isEditMode || !attachmentsData?.flow_versions) return null;
 
@@ -115,12 +106,10 @@ export default function DeploymentStepperModal({
         versionId: fv.id,
         versionTag: `v${fv.version_number}`,
       });
-      // Pre-populate tool names from the provider (may differ from flow name).
       const providerToolName = fv.provider_data?.tool_display_name;
       if (providerToolName) {
         toolNames.set(key, providerToolName);
       }
-      // Pre-populate attached connections from existing tool assignments.
       const appIds = fv.provider_data?.app_ids;
       if (appIds && appIds.length > 0) {
         connectionsByFlow.set(key, appIds);
@@ -217,9 +206,13 @@ function DeploymentStepperModalContent({
     id: string;
     name: string;
   } | null>(null);
+  const [stepRunKey, setStepRunKey] = useState(0);
+  const [isApiDone, setIsApiDone] = useState(false);
+  const [isStepsDone, setIsStepsDone] = useState(false);
 
   const {
     isEditMode,
+    editingDeployment,
     currentStep,
     totalSteps,
     minStep,
@@ -229,6 +222,8 @@ function DeploymentStepperModalContent({
     selectedProvider,
     selectedInstance,
     setSelectedInstance,
+    deploymentName,
+    deploymentDescription,
     needsProviderAccountCreation,
     buildProviderAccountPayload,
     buildDeploymentPayload,
@@ -237,7 +232,6 @@ function DeploymentStepperModalContent({
 
   const { t } = useTranslation();
   const showError = useErrorAlert();
-  const setNoticeData = useAlertStore((state) => state.setNoticeData);
 
   const { mutateAsync: createProviderAccount } = usePostProviderAccount();
   const { mutateAsync: createDeployment } = usePostDeployment();
@@ -248,8 +242,44 @@ function DeploymentStepperModalContent({
   const isDeploying = deploymentPhase === "deploying";
   const isDeployed = deploymentPhase === "deployed";
   const isInDeployPhase = isDeploying || isDeployed;
-  const providerConsoleUrl = "https://www.ibm.com/products/watsonx-orchestrate";
-  const providerDisplayName = selectedProvider?.name ?? "watsonx Orchestrate";
+  const providerConsoleUrl =
+    selectedInstance?.provider_key === "agentcore-runtime"
+      ? "https://ap-southeast-1.console.aws.amazon.com/bedrock/home?region=ap-southeast-1"
+      : "https://www.ibm.com/products/watsonx-orchestrate";
+  const providerDisplayName =
+    selectedProvider?.name ??
+    (selectedInstance?.provider_key === "agentcore-runtime"
+      ? "AgentCore Runtime"
+      : "watsonx Orchestrate");
+
+  // Transition from "deploying" to "deployed" only after BOTH the API call
+  // AND all 5 sequential steps have finished running.
+  useEffect(() => {
+    if (deploymentPhase === "deploying" && isApiDone && isStepsDone) {
+      setDeploymentPhase("deployed");
+      onDeployingChange(false);
+    }
+  }, [deploymentPhase, isApiDone, isStepsDone, onDeployingChange]);
+
+  const effectiveDeployment = useMemo<Deployment | null>(() => {
+    if (editingDeployment) {
+      return {
+        ...editingDeployment,
+        name: deploymentName || editingDeployment.name,
+        description: deploymentDescription || editingDeployment.description,
+      };
+    }
+    return {
+      id: createdDeployment?.id ?? "",
+      name: createdDeployment?.name ?? deploymentName,
+      description: deploymentDescription,
+    } as Deployment;
+  }, [
+    editingDeployment,
+    createdDeployment,
+    deploymentName,
+    deploymentDescription,
+  ]);
 
   // In edit mode, steps are shifted: 1=Type, 2=Attach, 3=Review.
   const logicalStep = isEditMode ? currentStep + 1 : currentStep;
@@ -276,26 +306,34 @@ function DeploymentStepperModalContent({
 
   const handleDeploy = async () => {
     try {
+      setIsApiDone(false);
+      setIsStepsDone(false);
+      setStepRunKey((k) => k + 1);
       setDeploymentPhase("deploying");
       onDeployingChange(true);
 
       if (isEditMode) {
         const payload = buildDeploymentUpdatePayload();
-        if (isDeploymentUpdatePayloadEmpty(payload)) {
-          onDeployingChange(false);
-          setDeploymentPhase("idle");
-          setNoticeData({ title: t("deployments.noChangesToSave") });
-          return;
+        if (!isDeploymentUpdatePayloadEmpty(payload)) {
+          await updateDeployment(payload);
         }
-        await updateDeployment(payload);
-        onDeployingChange(false);
-        setOpen(false);
+        if (editingDeployment) {
+          setCreatedDeployment({
+            id: editingDeployment.id,
+            name:
+              deploymentName.trim() ||
+              getDeploymentDisplayName(editingDeployment),
+          });
+        }
+        // Stay on the Deploy Status screen while the 5 steps complete!
+        setIsApiDone(true);
         return;
       }
 
       const providerId = selectedInstance?.id;
       if (!providerId) {
         setDeploymentPhase("idle");
+        onDeployingChange(false);
         return;
       }
 
@@ -308,8 +346,7 @@ function DeploymentStepperModalContent({
           name: getDeploymentDisplayName(deployment),
         });
       }
-      setDeploymentPhase("deployed");
-      onDeployingChange(false);
+      setIsApiDone(true);
     } catch (err: unknown) {
       setDeploymentPhase("idle");
       onDeployingChange(false);
@@ -322,9 +359,38 @@ function DeploymentStepperModalContent({
     }
   };
 
+  const handleRerunSteps = () => {
+    setIsStepsDone(false);
+    setIsApiDone(true);
+    setStepRunKey((k) => k + 1);
+    setDeploymentPhase("deploying");
+    onDeployingChange(true);
+  };
+
+  const handleFooterBack = () => {
+    if (isInDeployPhase) {
+      setDeploymentPhase("idle");
+      onDeployingChange(false);
+      return;
+    }
+    handleBack();
+  };
+
   const handleTest = () => {
-    if (!createdDeployment || !selectedInstance?.id) return;
-    onTestDeployment?.(createdDeployment, selectedInstance.id);
+    const targetDeployment =
+      createdDeployment ??
+      (editingDeployment
+        ? {
+            id: editingDeployment.id,
+            name:
+              deploymentName.trim() ||
+              getDeploymentDisplayName(editingDeployment),
+          }
+        : null);
+    const providerId =
+      selectedInstance?.id ?? editingDeployment?.provider_id ?? "";
+    if (!targetDeployment || !providerId) return;
+    onTestDeployment?.(targetDeployment, providerId);
     setOpen(false);
   };
 
@@ -360,8 +426,27 @@ function DeploymentStepperModalContent({
               : t("deployments.createNewDeploymentTitle")}
         </h2>
         <DeploymentStepper
-          steps={!isEditMode && isDeployed ? CREATE_DEPLOYED_STEPS : undefined}
-          currentStepOverride={!isEditMode && isDeployed ? 4 : undefined}
+          steps={
+            isEditMode
+              ? isDeployed
+                ? EDIT_DEPLOYED_STEPS
+                : EDIT_STEPS
+              : isDeployed
+                ? CREATE_DEPLOYED_STEPS
+                : undefined
+          }
+          currentStepOverride={isInDeployPhase ? 4 : undefined}
+          onStepClick={
+            isEditMode && !isDeploying
+              ? (stepNumber) => {
+                  if (stepNumber === 4 && !isInDeployPhase) {
+                    void handleDeploy();
+                  } else if (stepNumber < 4 && isInDeployPhase) {
+                    setDeploymentPhase("idle");
+                  }
+                }
+              : undefined
+          }
         />
       </div>
 
@@ -371,6 +456,7 @@ function DeploymentStepperModalContent({
           {isInDeployPhase ? (
             isDeployed && !isEditMode ? (
               <DeploymentSuccessContent
+                deployment={effectiveDeployment}
                 deploymentName={createdDeployment?.name}
                 providerName={providerDisplayName}
                 providerUrl={providerConsoleUrl}
@@ -384,7 +470,17 @@ function DeploymentStepperModalContent({
             ) : (
               <StepDeployStatus
                 phase={isDeploying ? "deploying" : "deployed"}
-                deploymentName={createdDeployment?.name}
+                deployment={effectiveDeployment}
+                deploymentName={
+                  createdDeployment?.name ??
+                  (deploymentName.trim() ||
+                    getDeploymentDisplayName(editingDeployment))
+                }
+                runKey={stepRunKey}
+                onAllStepsComplete={() => setIsStepsDone(true)}
+                onRerunSteps={handleRerunSteps}
+                showTestButton={!!onTestDeployment}
+                onTestDeployment={handleTest}
               />
             )
           ) : (
@@ -409,7 +505,7 @@ function DeploymentStepperModalContent({
           actionIcon={actionIcon}
           actionLabel={actionLabel}
           progressLabel={progressLabel}
-          onBack={handleBack}
+          onBack={handleFooterBack}
           onCancel={() => setOpen(false)}
           onClose={() => setOpen(false)}
           onPrimaryAction={isFinalStep ? handleDeploy : handleStepNext}

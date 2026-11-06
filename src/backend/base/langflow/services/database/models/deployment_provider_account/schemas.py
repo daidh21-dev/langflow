@@ -17,3 +17,4 @@ class DeploymentProviderKey(str, Enum):
     """
 
     WATSONX_ORCHESTRATE = "watsonx-orchestrate"
+    AGENTCORE_RUNTIME = "agentcore-runtime"

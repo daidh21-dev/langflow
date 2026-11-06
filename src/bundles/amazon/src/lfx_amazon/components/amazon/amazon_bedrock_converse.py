@@ -1,8 +1,13 @@
-from lfx.base.models.aws_constants import AWS_REGIONS, AWS_MODEL_IDs
+import json
+import os
+from pathlib import Path
+
+from lfx.base.models.aws_constants import AWS_MODEL_IDs, AWS_REGIONS
 from lfx.base.models.model import LCModelComponent
 from lfx.field_typing import LanguageModel
 from lfx.inputs.inputs import BoolInput, FloatInput, IntInput, MessageTextInput, SecretStrInput
 from lfx.io import DictInput, DropdownInput
+from lfx.schema.message import Message
 
 # Providers whose Bedrock models document "top_k" as an inference parameter, in the
 # range this component's default sits in. The Converse API only accepts
@@ -47,33 +52,30 @@ class AmazonBedrockConverseComponent(LCModelComponent):
             name="model_id",
             display_name="Model ID",
             options=AWS_MODEL_IDs,
-            value="anthropic.claude-3-5-sonnet-20241022-v2:0",
+            value="anthropic.claude-3-5-sonnet-20240620-v1:0",
             info="List of available model IDs to choose from.",
         ),
         SecretStrInput(
             name="aws_access_key_id",
             display_name="AWS Access Key ID",
-            info="The access key for your AWS account. "
-            "Usually set in Python code as the environment variable 'AWS_ACCESS_KEY_ID'.",
-            value="AWS_ACCESS_KEY_ID",
-            required=True,
+            info="The access key for your AWS account (để trống sẽ tự động dùng cấu hình AWS đã kết nối).",
+            value="",
+            required=False,
         ),
         SecretStrInput(
             name="aws_secret_access_key",
             display_name="AWS Secret Access Key",
-            info="The secret key for your AWS account. "
-            "Usually set in Python code as the environment variable 'AWS_SECRET_ACCESS_KEY'.",
-            value="AWS_SECRET_ACCESS_KEY",
-            required=True,
+            info="The secret key for your AWS account (để trống sẽ tự động dùng cấu hình AWS đã kết nối).",
+            value="",
+            required=False,
         ),
         SecretStrInput(
             name="aws_session_token",
             display_name="AWS Session Token",
-            advanced=True,
-            info="The session key for your AWS account. "
-            "Only needed for temporary credentials. "
-            "Usually set in Python code as the environment variable 'AWS_SESSION_TOKEN'.",
-            load_from_db=False,
+            advanced=False,
+            info="The session key for your AWS account (bắt buộc khi dùng khóa tạm thời STS bắt đầu bằng ASIA...).",
+            value="",
+            required=False,
         ),
         SecretStrInput(
             name="credentials_profile_name",
@@ -87,7 +89,7 @@ class AmazonBedrockConverseComponent(LCModelComponent):
         DropdownInput(
             name="region_name",
             display_name="Region Name",
-            value="us-east-1",
+            value="ap-southeast-1",
             options=AWS_REGIONS,
             info="The AWS region where your Bedrock resources are located.",
         ),
@@ -144,6 +146,48 @@ class AmazonBedrockConverseComponent(LCModelComponent):
         ),
     ]
 
+    def _resolve_aws_credentials(self) -> dict[str, str]:
+        ak = (self.aws_access_key_id or "").strip()
+        sk = (self.aws_secret_access_key or "").strip()
+        st = (self.aws_session_token or "").strip()
+        if ak in {"AWS_ACCESS_KEY_ID", ""}:
+            ak = ""
+        if sk in {"AWS_SECRET_ACCESS_KEY", ""}:
+            sk = ""
+        if st in {"AWS_SESSION_TOKEN", ""}:
+            st = ""
+
+        if not (ak and sk):
+            meta_file = Path("/app/deploy/agentcore/aws_deployed_runtimes.json")
+            if meta_file.exists():
+                try:
+                    saved = json.loads(meta_file.read_text(encoding="utf-8"))
+                    ak = ak or saved.get("aws_access_key_id", "")
+                    sk = sk or saved.get("aws_secret_access_key", "")
+                    st = st or saved.get("aws_session_token", "")
+                except Exception:  # noqa: BLE001
+                    pass
+            ak = ak or os.environ.get("AWS_ACCESS_KEY_ID", "")
+            sk = sk or os.environ.get("AWS_SECRET_ACCESS_KEY", "")
+            st = st or os.environ.get("AWS_SESSION_TOKEN", "")
+        elif ak.startswith("ASIA") and not st:
+            meta_file = Path("/app/deploy/agentcore/aws_deployed_runtimes.json")
+            if meta_file.exists():
+                try:
+                    saved = json.loads(meta_file.read_text(encoding="utf-8"))
+                    if saved.get("aws_access_key_id") == ak and saved.get("aws_session_token"):
+                        st = saved["aws_session_token"]
+                except Exception:  # noqa: BLE001
+                    pass
+
+        creds: dict[str, str] = {}
+        if ak and sk:
+            creds["aws_access_key_id"] = ak
+            creds["aws_secret_access_key"] = sk
+            if st:
+                creds["aws_session_token"] = st
+        return creds
+
     def build_model(self) -> LanguageModel:  # type: ignore[type-var]
         try:
             from langchain_aws.chat_models.bedrock_converse import ChatBedrockConverse
@@ -154,16 +198,11 @@ class AmazonBedrockConverseComponent(LCModelComponent):
         # Prepare initialization parameters
         init_params = {
             "model": self.model_id,
-            "region_name": self.region_name,
+            "region_name": self.region_name or "ap-southeast-1",
         }
 
-        # Add AWS credentials if provided
-        if self.aws_access_key_id:
-            init_params["aws_access_key_id"] = self.aws_access_key_id
-        if self.aws_secret_access_key:
-            init_params["aws_secret_access_key"] = self.aws_secret_access_key
-        if self.aws_session_token:
-            init_params["aws_session_token"] = self.aws_session_token
+        # Add AWS credentials if provided or resolved
+        init_params.update(self._resolve_aws_credentials())
         if self.credentials_profile_name:
             init_params["credentials_profile_name"] = self.credentials_profile_name
         if self.endpoint_url:

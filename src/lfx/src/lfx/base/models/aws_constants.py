@@ -2,6 +2,42 @@ from .model_metadata import create_model_metadata
 
 # Unified model metadata - single source of truth
 AWS_MODELS_DETAILED = [
+    # Default / Recommended Models (active on ap-southeast-1)
+    create_model_metadata(
+        provider="Amazon Bedrock",
+        name="anthropic.claude-3-haiku-20240307-v1:0",
+        icon="Amazon",
+        tool_calling=True,
+        default=True,
+    ),
+    create_model_metadata(
+        provider="Amazon Bedrock",
+        name="anthropic.claude-3-5-sonnet-20241022-v2:0",
+        icon="Amazon",
+        tool_calling=True,
+        default=True,
+    ),
+    create_model_metadata(
+        provider="Amazon Bedrock",
+        name="anthropic.claude-sonnet-4-5-20250929-v1:0",
+        icon="Amazon",
+        tool_calling=True,
+        default=True,
+    ),
+    create_model_metadata(
+        provider="Amazon Bedrock",
+        name="apac.amazon.nova-pro-v1:0",
+        icon="Amazon",
+        tool_calling=True,
+        default=True,
+    ),
+    create_model_metadata(
+        provider="Amazon Bedrock",
+        name="apac.amazon.nova-lite-v1:0",
+        icon="Amazon",
+        tool_calling=True,
+        default=True,
+    ),
     # Amazon Titan Models
     create_model_metadata(
         provider="Amazon Bedrock", name="amazon.titan-text-express-v1", icon="Amazon", tool_calling=True
@@ -23,15 +59,12 @@ AWS_MODELS_DETAILED = [
         provider="Amazon Bedrock", name="anthropic.claude-sonnet-4-6", icon="Amazon", tool_calling=True
     ),
     create_model_metadata(
-        provider="Amazon Bedrock", name="anthropic.claude-sonnet-4-5-20250929-v1:0", icon="Amazon", tool_calling=True
-    ),
-    create_model_metadata(
         provider="Amazon Bedrock", name="anthropic.claude-opus-4-5-20251101-v1:0", icon="Amazon", tool_calling=True
     ),
     create_model_metadata(
         provider="Amazon Bedrock", name="anthropic.claude-haiku-4-5-20251001-v1:0", icon="Amazon", tool_calling=True
     ),
-    # Anthropic Models - Claude 3.x (legacy)
+    # Anthropic Models - Claude 3.x
     create_model_metadata(
         provider="Amazon Bedrock", name="anthropic.claude-3-7-sonnet-20250219-v1:0", icon="Amazon", tool_calling=True
     ),
@@ -42,12 +75,6 @@ AWS_MODELS_DETAILED = [
     ),
     create_model_metadata(
         provider="Amazon Bedrock", name="anthropic.claude-3-5-sonnet-20240620-v1:0", icon="Amazon", tool_calling=True
-    ),
-    create_model_metadata(
-        provider="Amazon Bedrock", name="anthropic.claude-3-5-sonnet-20241022-v2:0", icon="Amazon", tool_calling=True
-    ),
-    create_model_metadata(
-        provider="Amazon Bedrock", name="anthropic.claude-3-haiku-20240307-v1:0", icon="Amazon", tool_calling=True
     ),
     create_model_metadata(
         provider="Amazon Bedrock", name="anthropic.claude-3-5-haiku-20241022-v1:0", icon="Amazon", tool_calling=True
@@ -128,20 +155,32 @@ AWS_MODEL_IDs = [metadata["name"] for metadata in AWS_MODELS_DETAILED]
 
 AWS_EMBEDDING_MODEL_IDS = [
     # Amazon Titan Embedding Models
-    "amazon.titan-embed-text-v1",
     "amazon.titan-embed-text-v2:0",
+    "amazon.titan-embed-text-v1",
     # Cohere Embedding Models
     "cohere.embed-english-v3",
     "cohere.embed-multilingual-v3",
 ]
 
+AWS_EMBEDDING_MODELS_DETAILED = [
+    create_model_metadata(
+        provider="Amazon Bedrock",
+        name=model_id,
+        icon="Amazon",
+        model_type="embeddings",
+        default=True,
+    )
+    for model_id in AWS_EMBEDDING_MODEL_IDS
+]
+
 AWS_REGIONS = [
+    "ap-southeast-1",
+    "us-east-1",
     "us-west-2",
     "us-west-1",
     "us-gov-west-1",
     "us-gov-east-1",
     "us-east-2",
-    "us-east-1",
     "sa-east-1",
     "me-south-1",
     "me-central-1",
@@ -162,7 +201,6 @@ AWS_REGIONS = [
     "ap-southeast-4",
     "ap-southeast-3",
     "ap-southeast-2",
-    "ap-southeast-1",
     "ap-south-2",
     "ap-south-1",
     "ap-northeast-3",

@@ -248,7 +248,12 @@ export default function ContentDisplay({
 
     case "reasoning":
       contentData = (
-        <ReasoningDisplay text={content.text} duration={content.duration} />
+        <ReasoningDisplay
+          text={content.text}
+          duration={content.duration}
+          title={content.header?.title}
+          defaultOpen={Boolean(content.header?.title) || Boolean(playgroundPage)}
+        />
       );
       break;
 
@@ -366,11 +371,15 @@ function ToolInputDisplay({ input }: { input: Record<string, JSONValue> }) {
 function ReasoningDisplay({
   text,
   duration,
+  title,
+  defaultOpen = false,
 }: {
   text: string;
   duration?: number;
+  title?: string | null;
+  defaultOpen?: boolean;
 }) {
-  const [isOpen, setIsOpen] = useState(false);
+  const [isOpen, setIsOpen] = useState(defaultOpen);
   const isStreaming = duration === undefined;
 
   if (isStreaming) {
@@ -387,7 +396,7 @@ function ReasoningDisplay({
   }
 
   return (
-    <div className="flex flex-col gap-1">
+    <div className="flex flex-col gap-1.5">
       <button
         type="button"
         onClick={() => setIsOpen((prev) => !prev)}
@@ -398,13 +407,13 @@ function ReasoningDisplay({
           className="h-3 w-3"
           aria-hidden
         />
-        <span>Thought for {formatSeconds(duration)}</span>
+        <span>{title || `Thought for ${formatSeconds(duration)}`}</span>
         <ChevronDown
           className={`h-3 w-3 transition-transform ${isOpen ? "rotate-180" : ""}`}
         />
       </button>
       {isOpen && (
-        <div className="ml-1 pl-3 text-xs text-muted-foreground whitespace-pre-wrap border-l-2 border-muted-foreground/20 italic">
+        <div className="ml-1 pl-3 py-1.5 pr-2.5 text-xs text-muted-foreground/85 whitespace-pre-wrap border-l-2 border-muted-foreground/30 bg-muted/20 rounded-r-md italic leading-relaxed">
           {text}
         </div>
       )}

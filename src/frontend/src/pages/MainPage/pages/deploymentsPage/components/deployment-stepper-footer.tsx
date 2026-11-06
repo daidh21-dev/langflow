@@ -43,20 +43,18 @@ export default function DeploymentStepperFooter({
       {isDeployed ? (
         <div />
       ) : (
-        <Button variant="ghost" onClick={onCancel}>
+        <Button variant="ghost" onClick={onCancel} disabled={isDeploying}>
           {t("deployments.cancel")}
         </Button>
       )}
       <div className="flex items-center gap-3">
-        {!isDeployed && (
-          <Button
-            variant="outline"
-            onClick={onBack}
-            disabled={currentStep === minStep || isDeploying}
-          >
-            {t("deployments.back")}
-          </Button>
-        )}
+        <Button
+          variant="outline"
+          onClick={onBack}
+          disabled={(!isDeployed && currentStep === minStep) || isDeploying}
+        >
+          {t("deployments.back")}
+        </Button>
         {!isInDeployPhase && (
           <Button
             onClick={onPrimaryAction}

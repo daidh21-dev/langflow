@@ -158,6 +158,9 @@ class WatsonxOrchestrateDeploymentMapper(BaseDeploymentMapper):
 
     PROVIDER_LABEL = "watsonx Orchestrate"
 
+    def _validate_flow_artifacts(self, flow_artifacts: list[tuple[UUID, BaseFlowArtifact]]) -> None:
+        _validate_wxo_flow_artifacts(flow_artifacts)
+
     api_payloads = DeploymentApiPayloads(
         deployment_create=PayloadSlot(
             adapter_model=WatsonxApiDeploymentCreatePayload,
@@ -634,7 +637,7 @@ class WatsonxOrchestrateDeploymentMapper(BaseDeploymentMapper):
             project_id=project_id,
             reference_ids=flow_version_ids,
         )
-        _validate_wxo_flow_artifacts(flow_artifacts)
+        self._validate_flow_artifacts(flow_artifacts)
         # Start with flow names as display labels, then let user-provided
         # tool_display_name overrides replace them. The adapter provider-data
         # schema generates the wxO technical tool name once; raw payload names
@@ -733,7 +736,7 @@ class WatsonxOrchestrateDeploymentMapper(BaseDeploymentMapper):
             deployment_db_id=deployment_db_id,
             flow_version_ids=ordered_flow_version_ids,
         )
-        _validate_wxo_flow_artifacts(
+        self._validate_flow_artifacts(
             [(flow_version_id, artifact) for flow_version_id, _version_number, _project_id, artifact in flow_artifacts]
         )
         # Start with flow names as display labels, then let user-provided

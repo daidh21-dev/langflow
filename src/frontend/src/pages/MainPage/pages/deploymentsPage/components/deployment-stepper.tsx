@@ -7,6 +7,7 @@ const STEP_LABEL_KEYS: Record<string, string> = {
   Type: "deployments.labelType",
   Flows: "deployments.stepFlows",
   Review: "deployments.review",
+  Deploy: "deployments.deploy",
   Deployed: "deployments.deployed",
 };
 
@@ -24,10 +25,18 @@ export const CREATE_DEPLOYED_STEPS = [
   { number: 4, label: "Deployed" },
 ] as const;
 
-const EDIT_STEPS = [
+export const EDIT_STEPS = [
   { number: 1, label: "Type" },
   { number: 2, label: "Flows" },
   { number: 3, label: "Review" },
+  { number: 4, label: "Deploy" },
+] as const;
+
+export const EDIT_DEPLOYED_STEPS = [
+  { number: 1, label: "Type" },
+  { number: 2, label: "Flows" },
+  { number: 3, label: "Review" },
+  { number: 4, label: "Deployed" },
 ] as const;
 
 export const DEPLOYMENT_STEPS = CREATE_STEPS;
@@ -35,11 +44,13 @@ export const DEPLOYMENT_STEPS = CREATE_STEPS;
 interface DeploymentStepperProps {
   steps?: readonly { number: number; label: string }[];
   currentStepOverride?: number;
+  onStepClick?: (stepNumber: number) => void;
 }
 
 export default function DeploymentStepper({
   steps: stepsProp,
   currentStepOverride,
+  onStepClick,
 }: DeploymentStepperProps) {
   const { t } = useTranslation();
   const { currentStep, isEditMode } = useDeploymentStepper();
@@ -59,34 +70,41 @@ export default function DeploymentStepper({
         className="relative flex h-full items-start justify-between"
         role="list"
       >
-        {steps.map((step) => (
-          <div
-            key={step.number}
-            className="flex flex-col items-center gap-1"
-            role="listitem"
-            aria-current={activeStep === step.number ? "step" : undefined}
-          >
+        {steps.map((step) => {
+          const isClickable = !!onStepClick;
+          return (
             <div
+              key={step.number}
               className={cn(
-                "flex h-8 w-8 items-center justify-center rounded-full text-sm font-medium transition-colors",
-                activeStep >= step.number
-                  ? "bg-foreground text-background"
-                  : "bg-muted text-muted-foreground",
+                "flex flex-col items-center gap-1",
+                isClickable && "cursor-pointer select-none",
               )}
-              aria-hidden="true"
+              role="listitem"
+              aria-current={activeStep === step.number ? "step" : undefined}
+              onClick={() => onStepClick?.(step.number)}
             >
-              {step.number}
+              <div
+                className={cn(
+                  "flex h-8 w-8 items-center justify-center rounded-full text-sm font-medium transition-colors",
+                  activeStep >= step.number
+                    ? "bg-foreground text-background"
+                    : "bg-muted text-muted-foreground",
+                )}
+                aria-hidden="true"
+              >
+                {step.number}
+              </div>
+              <span
+                className={cn(
+                  "whitespace-nowrap text-xs text-foreground",
+                  activeStep >= step.number && "font-medium",
+                )}
+              >
+                {t(STEP_LABEL_KEYS[step.label] ?? step.label)}
+              </span>
             </div>
-            <span
-              className={cn(
-                "whitespace-nowrap text-xs text-foreground",
-                activeStep >= step.number && "font-medium",
-              )}
-            >
-              {t(STEP_LABEL_KEYS[step.label] ?? step.label)}
-            </span>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

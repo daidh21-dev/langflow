@@ -1,10 +1,11 @@
 import type { WatsonxFlowEligibilityIssue } from "./helpers/watsonx-flow-eligibility";
 
-export type DeploymentProviderType = "watsonx" | "kubernetes";
+export type DeploymentProviderType = "agentcore" | "watsonx" | "kubernetes";
 
 export const DEFAULT_FLOW_NAME = "Flow";
 export const UNKNOWN_FLOW_NAME = "Unknown flow";
 export const WXO_PROVIDER_KEY = "watsonx-orchestrate";
+export const AGENTCORE_PROVIDER_KEY = "agentcore-runtime";
 
 export interface EnvVarEntry {
   id: string;

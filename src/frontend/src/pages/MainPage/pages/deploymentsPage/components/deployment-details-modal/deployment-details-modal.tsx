@@ -14,6 +14,7 @@ import {
 } from "@/controllers/API/queries/deployments/use-get-deployment-attachments";
 import { useGetDeploymentConfigs } from "@/controllers/API/queries/deployments/use-get-deployment-configs";
 import type { Deployment } from "../../types";
+import DeploymentStepsTracker from "../deployment-steps-tracker";
 import DeploymentFlowList from "./deployment-flow-list";
 import DeploymentInfoGrid from "./deployment-info-grid";
 
@@ -102,6 +103,10 @@ export default function DeploymentDetailsModal({
               flowVersions={flowVersions}
               getConnectionNames={getConnectionNames}
             />
+
+            <div className="border-t border-border" />
+
+            <DeploymentStepsTracker deployment={deploymentData} />
           </div>
         )}
 

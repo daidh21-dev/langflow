@@ -1,0 +1,16 @@
+{
+  "agent_id": "ac_agent_148cce8537b0",
+  "name": "langflow_Demo_Cch_2_AgentCore_Python_Graph_Port_8082_e57f9476",
+  "display_name": "Demo Cách 2: AgentCore Python Graph (AWS ap-southeast-1)",
+  "description": "Triển khai từ Python Graph [Demo Cách 2] lên AWS Bedrock AgentCore Runtime (langflow_method2_python_graph-f40S0AGoqe, ap-southeast-1).",
+  "llm": "us.amazon.nova-pro-v1:0",
+  "updated_at": "2026-11-06T03:33:19.555319+00:00",
+  "tools": [
+    {
+      "tool_id": "ac_tool_1085b55412a4",
+      "name": "langflow_AgentCore_Python_Graph_Tool_52f2b173",
+      "display_name": "AgentCore_Python_Graph_Tool",
+      "source_ref": "52166ca7-1d8b-4269-82da-ba30b9ae3a64"
+    }
+  ]
+}

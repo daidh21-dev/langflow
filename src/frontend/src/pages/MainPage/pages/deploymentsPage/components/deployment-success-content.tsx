@@ -1,8 +1,11 @@
 import { useTranslation } from "react-i18next";
 import ForwardedIconComponent from "@/components/common/genericIconComponent";
 import { Button } from "@/components/ui/button";
+import type { Deployment } from "../types";
+import DeploymentStepsTracker from "./deployment-steps-tracker";
 
 interface DeploymentSuccessContentProps {
+  deployment?: Deployment | null;
   deploymentName?: string;
   providerName: string;
   providerUrl: string;
@@ -11,6 +14,7 @@ interface DeploymentSuccessContentProps {
 }
 
 export default function DeploymentSuccessContent({
+  deployment,
   deploymentName,
   providerName,
   providerUrl,
@@ -19,7 +23,7 @@ export default function DeploymentSuccessContent({
 }: DeploymentSuccessContentProps) {
   const { t } = useTranslation();
   return (
-    <div className="flex flex-1 flex-col items-center justify-center gap-8 py-10 text-center">
+    <div className="flex flex-1 flex-col items-center justify-center gap-6 py-6 text-center">
       <div className="flex h-16 w-16 items-center justify-center rounded-full border-2 border-accent-emerald">
         <ForwardedIconComponent
           name="Check"
@@ -47,6 +51,10 @@ export default function DeploymentSuccessContent({
           {providerName}
           <ForwardedIconComponent name="ArrowUpRight" className="h-4 w-4" />
         </a>
+      </div>
+
+      <div className="w-full max-w-2xl text-left">
+        <DeploymentStepsTracker deployment={deployment} compact />
       </div>
 
       {showTestButton && deploymentName && (

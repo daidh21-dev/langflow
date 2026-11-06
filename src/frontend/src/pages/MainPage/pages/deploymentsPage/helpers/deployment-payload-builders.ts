@@ -16,6 +16,7 @@ import type {
   SelectedFlowVersion,
 } from "../types";
 import {
+  AGENTCORE_PROVIDER_KEY,
   DEFAULT_FLOW_NAME,
   getDefaultDeploymentToolName,
   getDeploymentDisplayName,
@@ -51,7 +52,7 @@ export function buildProviderAccountPayload({
   if (!hasValidCredentials) return null;
   return {
     name: credentials.name.trim(),
-    provider_key: WXO_PROVIDER_KEY,
+    provider_key: credentials.provider_key || AGENTCORE_PROVIDER_KEY,
     provider_data: {
       url: credentials.url.trim(),
       api_key: credentials.api_key.trim(),

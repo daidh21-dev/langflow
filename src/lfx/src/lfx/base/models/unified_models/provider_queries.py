@@ -5,6 +5,7 @@ from __future__ import annotations
 from functools import lru_cache
 
 from lfx.base.models.anthropic_constants import ANTHROPIC_MODELS_DETAILED
+from lfx.base.models.aws_constants import AWS_EMBEDDING_MODELS_DETAILED, AWS_MODELS_DETAILED
 from lfx.base.models.azure_ai_foundry_constants import AZURE_AI_FOUNDRY_MODELS_DETAILED
 from lfx.base.models.google_generative_ai_constants import (
     GOOGLE_GENERATIVE_AI_EMBEDDING_MODELS_DETAILED,
@@ -48,6 +49,8 @@ def _canonical_provider_name(provider: str) -> str:
 
 
 _STATIC_MODELS_DETAILED: list[list[dict]] = [
+    AWS_MODELS_DETAILED,
+    AWS_EMBEDDING_MODELS_DETAILED,
     ANTHROPIC_MODELS_DETAILED,
     OPENAI_MODELS_DETAILED,
     OPENAI_EMBEDDING_MODELS_DETAILED,

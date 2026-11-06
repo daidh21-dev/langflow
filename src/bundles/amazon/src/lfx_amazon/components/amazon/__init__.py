@@ -14,12 +14,28 @@ from typing import TYPE_CHECKING, Any
 from lfx.utils.lazy_import import import_mod
 
 if TYPE_CHECKING:
+    from .agentcore_browser_tool import AgentCoreBrowserToolComponent
+    from .agentcore_code_interpreter import AgentCoreCodeInterpreterComponent
+    from .agentcore_gateway_mcp import AgentCoreGatewayMCPComponent
+    from .agentcore_guardrails import AgentCoreGuardrailsComponent
+    from .agentcore_knowledge_base import AgentCoreKnowledgeBaseComponent
+    from .agentcore_memory import AgentCoreMemoryComponent
+    from .agentcore_runtime_invoker import AgentCoreRuntimeInvokerComponent
+    from .agentcore_s3_packager import AgentCoreS3ArtifactPackagerComponent
     from .amazon_bedrock_converse import AmazonBedrockConverseComponent
     from .amazon_bedrock_embedding import AmazonBedrockEmbeddingsComponent
     from .amazon_bedrock_model import AmazonBedrockComponent
     from .s3_bucket_uploader import S3BucketUploaderComponent
 
 _dynamic_imports = {
+    "AgentCoreBrowserToolComponent": "agentcore_browser_tool",
+    "AgentCoreCodeInterpreterComponent": "agentcore_code_interpreter",
+    "AgentCoreGatewayMCPComponent": "agentcore_gateway_mcp",
+    "AgentCoreGuardrailsComponent": "agentcore_guardrails",
+    "AgentCoreKnowledgeBaseComponent": "agentcore_knowledge_base",
+    "AgentCoreMemoryComponent": "agentcore_memory",
+    "AgentCoreRuntimeInvokerComponent": "agentcore_runtime_invoker",
+    "AgentCoreS3ArtifactPackagerComponent": "agentcore_s3_packager",
     "AmazonBedrockComponent": "amazon_bedrock_model",
     "AmazonBedrockConverseComponent": "amazon_bedrock_converse",
     "AmazonBedrockEmbeddingsComponent": "amazon_bedrock_embedding",
@@ -27,6 +43,14 @@ _dynamic_imports = {
 }
 
 __all__ = [
+    "AgentCoreBrowserToolComponent",
+    "AgentCoreCodeInterpreterComponent",
+    "AgentCoreGatewayMCPComponent",
+    "AgentCoreGuardrailsComponent",
+    "AgentCoreKnowledgeBaseComponent",
+    "AgentCoreMemoryComponent",
+    "AgentCoreRuntimeInvokerComponent",
+    "AgentCoreS3ArtifactPackagerComponent",
     "AmazonBedrockComponent",
     "AmazonBedrockConverseComponent",
     "AmazonBedrockEmbeddingsComponent",

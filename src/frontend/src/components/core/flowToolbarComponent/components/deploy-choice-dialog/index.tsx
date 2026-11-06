@@ -82,7 +82,7 @@ export default function DeployChoiceDialog({
       }}
     >
       <DialogContent
-        className="max-h-screen w-full max-w-xl overflow-y-auto"
+        className="max-h-[90vh] w-full max-w-2xl overflow-y-auto"
         hideTitle
         hideDescription
       >
